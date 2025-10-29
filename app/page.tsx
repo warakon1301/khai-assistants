@@ -46,11 +46,12 @@ export default function Home() {
 
         {/* Template Categories */}
         <div>
-          {templateCategories.map((category) => (
+          {templateCategories.map((category, index) => (
             <TemplateCategorySection
               key={category.id}
               category={category}
               searchQuery={searchQuery}
+              categoryIndex={index}
             />
           ))}
           

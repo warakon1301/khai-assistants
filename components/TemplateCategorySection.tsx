@@ -3,11 +3,15 @@
 import { useState } from 'react';
 import { TemplateCategory } from '@/data/templates';
 import TemplateCard from './TemplateCard';
+import TableView from './TableView';
+import CardView from './CardView';
+import { ViewMode } from './ViewModeSwitcher';
 
 interface TemplateCategorySectionProps {
   category: TemplateCategory;
   searchQuery: string;
   categoryIndex: number;
+  viewMode: ViewMode;
 }
 
 const categoryColors = [
@@ -41,6 +45,7 @@ export default function TemplateCategorySection({
   category,
   searchQuery,
   categoryIndex,
+  viewMode,
 }: TemplateCategorySectionProps) {
   const [expanded, setExpanded] = useState(true);
   const [copyMessage, setCopyMessage] = useState('');
@@ -63,6 +68,45 @@ export default function TemplateCategorySection({
 
   const colors = categoryColors[categoryIndex % categoryColors.length];
 
+  const renderContent = () => {
+    if (!expanded) return null;
+
+    switch (viewMode) {
+      case 'table':
+        return (
+          <TableView
+            templates={filteredTemplates}
+            onCopy={handleCopy}
+            categoryName={category.name}
+          />
+        );
+      case 'cards':
+        return (
+          <CardView
+            templates={filteredTemplates}
+            onCopy={handleCopy}
+            categoryName={category.name}
+            categoryColors={colors}
+          />
+        );
+      case 'list':
+      default:
+        return (
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {filteredTemplates.map((template, index) => (
+              <TemplateCard
+                key={template.id}
+                template={template}
+                onCopy={handleCopy}
+                cardIndex={index}
+                categoryColors={colors}
+              />
+            ))}
+          </div>
+        );
+    }
+  };
+
   return (
     <div className="mb-10">
       <button
@@ -75,19 +119,7 @@ export default function TemplateCategorySection({
         </span>
       </button>
 
-      {expanded && (
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {filteredTemplates.map((template, index) => (
-              <TemplateCard
-                key={template.id}
-                template={template}
-                onCopy={handleCopy}
-                cardIndex={index}
-                categoryColors={colors}
-              />
-            ))}
-          </div>
-      )}
+      {renderContent()}
 
       {copyMessage && (
         <div className="fixed bottom-6 right-6 bg-green-500 text-white px-6 py-4 rounded-xl shadow-xl z-50 text-lg font-semibold animate-pulse">

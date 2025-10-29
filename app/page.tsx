@@ -1,11 +1,21 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { templateCategories } from '@/data/templates';
 import TemplateCategorySection from '@/components/TemplateCategorySection';
+import ViewModeSwitcher, { ViewMode } from '@/components/ViewModeSwitcher';
 
 export default function Home() {
   const [searchQuery, setSearchQuery] = useState('');
+  const [viewMode, setViewMode] = useState<ViewMode>('list');
+
+  // Load view mode preference from localStorage on mount
+  useEffect(() => {
+    const savedViewMode = localStorage.getItem('template-view-mode') as ViewMode;
+    if (savedViewMode) {
+      setViewMode(savedViewMode);
+    }
+  }, []);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-pink-50 via-rose-50 to-fuchsia-50">
@@ -20,26 +30,37 @@ export default function Home() {
           </p>
         </div>
 
-        {/* Search Bar */}
+        {/* Search Bar and Controls */}
         <div className="mb-10">
           <div className="bg-white rounded-xl shadow-lg border border-gray-200 p-5">
-            <div className="flex items-center gap-3">
-              <span className="text-2xl">🔍</span>
-              <input
-                type="text"
-                placeholder="พิมพ์เพื่อค้นหาเทมเพลต..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="flex-1 px-4 py-3 text-lg border-2 border-gray-300 rounded-lg focus:outline-none focus:border-pink-500 focus:ring-2 focus:ring-pink-200 transition-all"
-              />
-              {searchQuery && (
-                <button
-                  onClick={() => setSearchQuery('')}
-                  className="px-4 py-2 text-gray-500 hover:text-gray-700 rounded-lg hover:bg-gray-100 transition-colors"
-                >
-                  ✕
-                </button>
-              )}
+            <div className="flex flex-col lg:flex-row gap-4">
+              {/* Search Input */}
+              <div className="flex items-center gap-3 flex-1">
+                <span className="text-2xl">🔍</span>
+                <input
+                  type="text"
+                  placeholder="พิมพ์เพื่อค้นหาเทมเพลต..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="flex-1 px-4 py-3 text-lg border-2 border-gray-300 rounded-lg focus:outline-none focus:border-pink-500 focus:ring-2 focus:ring-pink-200 transition-all"
+                />
+                {searchQuery && (
+                  <button
+                    onClick={() => setSearchQuery('')}
+                    className="px-4 py-2 text-gray-500 hover:text-gray-700 rounded-lg hover:bg-gray-100 transition-colors"
+                  >
+                    ✕
+                  </button>
+                )}
+              </div>
+
+              {/* View Controls */}
+              <div className="flex items-center gap-3">
+                <ViewModeSwitcher
+                  currentMode={viewMode}
+                  onModeChange={setViewMode}
+                />
+              </div>
             </div>
           </div>
         </div>
@@ -52,6 +73,7 @@ export default function Home() {
               category={category}
               searchQuery={searchQuery}
               categoryIndex={index}
+              viewMode={viewMode}
             />
           ))}
           

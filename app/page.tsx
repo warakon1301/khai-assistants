@@ -13,7 +13,7 @@ export default function Home() {
         {/* Header */}
         <div className="text-center mb-10">
           <h1 className="text-5xl font-bold text-gray-900 mb-4 tracking-tight">
-            📋 Template Viewer
+            🐷 Template Viewer
           </h1>
           <p className="text-gray-700 text-xl font-medium">
             ค้นหาและคัดลอกเทมเพลตข้อความสำหรับ LINE MAN

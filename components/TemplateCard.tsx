@@ -10,20 +10,26 @@ interface TemplateCardProps {
   };
   onCopy: (content: string) => void;
   cardIndex?: number;
+  categoryColors?: {
+    cardBorder: string;
+    cardHoverBorder: string;
+    cardButton: string;
+    cardButtonHover: string;
+  };
 }
 
 const cardColors = [
-  { border: 'border-pink-300', hoverBorder: 'hover:border-pink-400', button: 'bg-pink-500', buttonHover: 'hover:bg-pink-600' },
-  { border: 'border-purple-300', hoverBorder: 'hover:border-purple-400', button: 'bg-purple-500', buttonHover: 'hover:bg-purple-600' },
-  { border: 'border-blue-300', hoverBorder: 'hover:border-blue-400', button: 'bg-blue-500', buttonHover: 'hover:bg-blue-600' },
-  { border: 'border-green-300', hoverBorder: 'hover:border-green-400', button: 'bg-green-500', buttonHover: 'hover:bg-green-600' },
-  { border: 'border-orange-300', hoverBorder: 'hover:border-orange-400', button: 'bg-orange-500', buttonHover: 'hover:bg-orange-600' },
-  { border: 'border-teal-300', hoverBorder: 'hover:border-teal-400', button: 'bg-teal-500', buttonHover: 'hover:bg-teal-600' },
-  { border: 'border-rose-300', hoverBorder: 'hover:border-rose-400', button: 'bg-rose-500', buttonHover: 'hover:bg-rose-600' },
-  { border: 'border-indigo-300', hoverBorder: 'hover:border-indigo-400', button: 'bg-indigo-500', buttonHover: 'hover:bg-indigo-600' },
+  { cardBorder: 'border-pink-300', cardHoverBorder: 'hover:border-pink-400', cardButton: 'bg-pink-500', cardButtonHover: 'hover:bg-pink-600' },
+  { cardBorder: 'border-purple-300', cardHoverBorder: 'hover:border-purple-400', cardButton: 'bg-purple-500', cardButtonHover: 'hover:bg-purple-600' },
+  { cardBorder: 'border-blue-300', cardHoverBorder: 'hover:border-blue-400', cardButton: 'bg-blue-500', cardButtonHover: 'hover:bg-blue-600' },
+  { cardBorder: 'border-green-300', cardHoverBorder: 'hover:border-green-400', cardButton: 'bg-green-500', cardButtonHover: 'hover:bg-green-600' },
+  { cardBorder: 'border-orange-300', cardHoverBorder: 'hover:border-orange-400', cardButton: 'bg-orange-500', cardButtonHover: 'hover:bg-orange-600' },
+  { cardBorder: 'border-teal-300', cardHoverBorder: 'hover:border-teal-400', cardButton: 'bg-teal-500', cardButtonHover: 'hover:bg-teal-600' },
+  { cardBorder: 'border-rose-300', cardHoverBorder: 'hover:border-rose-400', cardButton: 'bg-rose-500', cardButtonHover: 'hover:bg-rose-600' },
+  { cardBorder: 'border-indigo-300', cardHoverBorder: 'hover:border-indigo-400', cardButton: 'bg-indigo-500', cardButtonHover: 'hover:bg-indigo-600' },
 ];
 
-export default function TemplateCard({ template, onCopy, cardIndex = 0 }: TemplateCardProps) {
+export default function TemplateCard({ template, onCopy, cardIndex = 0, categoryColors }: TemplateCardProps) {
   const [copied, setCopied] = useState(false);
 
   const handleCopy = () => {
@@ -32,21 +38,21 @@ export default function TemplateCard({ template, onCopy, cardIndex = 0 }: Templa
     setTimeout(() => setCopied(false), 2000);
   };
 
-  const colors = cardColors[cardIndex % cardColors.length];
+  const colors = categoryColors || cardColors[cardIndex % cardColors.length];
 
   return (
-    <div className={`bg-white rounded-xl shadow-sm border-2 ${colors.border} ${colors.hoverBorder} p-6 hover:shadow-md transition-all`}>
+        <div className={`bg-white rounded-xl shadow-sm border-2 ${colors.cardBorder} ${colors.cardHoverBorder} p-6 hover:shadow-md transition-all`}>
       <div className="flex justify-between items-start mb-5">
         <h3 className="text-xl font-bold text-gray-900 flex-1 leading-tight mr-4">
           {template.title}
         </h3>
         <button
           onClick={handleCopy}
-          className={`flex-shrink-0 px-5 py-2.5 rounded-lg text-base font-semibold transition-all shadow-sm ${
-            copied
-              ? 'bg-green-500 text-white shadow-green-200'
-              : `${colors.button} text-white ${colors.buttonHover} hover:shadow-md active:scale-95`
-          }`}
+              className={`flex-shrink-0 px-5 py-2.5 rounded-lg text-base font-semibold transition-all shadow-sm ${
+                copied
+                  ? 'bg-green-500 text-white shadow-green-200'
+                  : `${colors.cardButton} text-white ${colors.cardButtonHover} hover:shadow-md active:scale-95`
+              }`}
         >
           {copied ? '✓ คัดลอกแล้ว' : '📋 คัดลอก'}
         </button>

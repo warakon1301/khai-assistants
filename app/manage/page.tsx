@@ -11,50 +11,29 @@ export default function ManageTemplates() {
   const [showAddForm, setShowAddForm] = useState<string | false>(false);
   const [newCategory, setNewCategory] = useState('');
 
-  // Load templates from API
+  // Load templates from localStorage
   useEffect(() => {
-    const loadTemplates = async () => {
+    const saved = localStorage.getItem('custom-templates');
+    if (saved) {
       try {
-        const response = await fetch('/api/templates');
-        if (response.ok) {
-          const data = await response.json();
-          setCategories(data);
-        } else {
-          setCategories(templateCategories);
-        }
+        setCategories(JSON.parse(saved));
       } catch (error) {
-        console.error('Error loading templates:', error);
+        console.error('Error loading custom templates:', error);
         setCategories(templateCategories);
       }
-    };
-
-    loadTemplates();
+    } else {
+      setCategories(templateCategories);
+      localStorage.setItem('custom-templates', JSON.stringify(templateCategories));
+    }
   }, []);
 
-  // Save templates to API
-  const saveTemplates = async (newCategories: TemplateCategory[]) => {
+  // Save templates to localStorage
+  const saveTemplates = (newCategories: TemplateCategory[]) => {
+    localStorage.setItem('custom-templates', JSON.stringify(newCategories));
     setCategories(newCategories);
     
-    try {
-      const response = await fetch('/api/templates', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(newCategories),
-      });
-      
-      if (response.ok) {
-        // Dispatch custom event to notify other pages
-        window.dispatchEvent(new Event('templates-updated'));
-      } else {
-        console.error('Failed to save templates');
-        alert('บันทึกข้อมูลไม่สำเร็จ กรุณาลองใหม่อีกครั้ง');
-      }
-    } catch (error) {
-      console.error('Error saving templates:', error);
-      alert('เกิดข้อผิดพลาดในการบันทึกข้อมูล');
-    }
+    // Dispatch custom event to notify other pages
+    window.dispatchEvent(new Event('templates-updated'));
   };
 
   // Edit template
@@ -64,7 +43,7 @@ export default function ManageTemplates() {
   };
 
   // Save edited template
-  const handleSaveEdit = async () => {
+  const handleSaveEdit = () => {
     if (!editingTemplate) return;
 
     const newCategories = categories.map((category) => {
@@ -79,13 +58,13 @@ export default function ManageTemplates() {
       return category;
     });
 
-    await saveTemplates(newCategories);
+    saveTemplates(newCategories);
     setEditingTemplate(null);
     setEditingCategory('');
   };
 
   // Delete template
-  const handleDelete = async (templateId: string, categoryId: string) => {
+  const handleDelete = (templateId: string, categoryId: string) => {
     if (!confirm('คุณแน่ใจว่าต้องการลบเทมเพลตนี้?')) return;
 
     const newCategories = categories.map((category) => {
@@ -98,11 +77,11 @@ export default function ManageTemplates() {
       return category;
     });
 
-    await saveTemplates(newCategories);
+    saveTemplates(newCategories);
   };
 
   // Add new template
-  const handleAddTemplate = async (categoryId: string, title: string, content: string) => {
+  const handleAddTemplate = (categoryId: string, title: string, content: string) => {
     const newTemplate: Template = {
       id: `${categoryId}-${Date.now()}`,
       title,
@@ -119,14 +98,14 @@ export default function ManageTemplates() {
       return category;
     });
 
-    await saveTemplates(newCategories);
+    saveTemplates(newCategories);
     setShowAddForm(false);
     // Clear form fields
     setNewCategory('');
   };
 
   // Add new category
-  const handleAddCategory = async () => {
+  const handleAddCategory = () => {
     if (!newCategory.trim()) return;
 
     const newCategoryObj: TemplateCategory = {
@@ -135,22 +114,22 @@ export default function ManageTemplates() {
       templates: [],
     };
 
-    await saveTemplates([...categories, newCategoryObj]);
+    saveTemplates([...categories, newCategoryObj]);
     setNewCategory('');
   };
 
   // Delete category
-  const handleDeleteCategory = async (categoryId: string) => {
+  const handleDeleteCategory = (categoryId: string) => {
     if (!confirm('คุณแน่ใจว่าต้องการลบหมวดหมู่นี้? เทมเพลตทั้งหมดในหมวดหมู่นี้จะถูกลบด้วย')) return;
 
-    await saveTemplates(categories.filter((cat) => cat.id !== categoryId));
+    saveTemplates(categories.filter((cat) => cat.id !== categoryId));
   };
 
   // Reset to defaults
-  const handleReset = async () => {
+  const handleReset = () => {
     if (!confirm('คุณแน่ใจว่าต้องการรีเซ็ตเป็นค่าตั้งต้น? การเปลี่ยนแปลงทั้งหมดจะถูกลบ')) return;
 
-    await saveTemplates(templateCategories);
+    saveTemplates(templateCategories);
     alert('รีเซ็ตเป็นค่าตั้งต้นเรียบร้อยแล้ว');
   };
 
@@ -170,12 +149,12 @@ export default function ManageTemplates() {
   };
 
   // Import templates from JSON file
-  const handleImport = async (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImport = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
 
     const reader = new FileReader();
-    reader.onload = async (e) => {
+    reader.onload = (e) => {
       try {
         const importedData = JSON.parse(e.target?.result as string);
         
@@ -185,7 +164,7 @@ export default function ManageTemplates() {
             return;
           }
           
-          await saveTemplates(importedData);
+          saveTemplates(importedData);
           alert('นำเข้าข้อมูลเรียบร้อยแล้ว');
         } else {
           alert('รูปแบบไฟล์ไม่ถูกต้อง กรุณาเลือกไฟล์ JSON ที่ถูกต้อง');
@@ -244,14 +223,14 @@ export default function ManageTemplates() {
             <div>
               <h3 className="font-bold text-blue-900 mb-1">เคล็ดลับการใช้งาน</h3>
               <p className="text-blue-800 text-sm mb-2">
-                ✅ ระบบจะบันทึกข้อมูลลงไฟล์ JSON อัตโนมัติทุกครั้งที่คุณแก้ไข
+                ✅ ระบบจะบันทึกข้อมูลอัตโนมัติทุกครั้งที่คุณแก้ไข แต่ยังอยู่ในเบราว์เซอร์เท่านั้น
               </p>
               <p className="text-blue-800 text-sm mb-2">
-                🌐 <strong>ข้อมูลจะซิงก์ข้ามเครื่องอัตโนมัติ!</strong> ทุกคนที่เปิดเว็บเดียวกันจะเห็นข้อมูลเดียวกัน
+                ⚠️ <strong>ข้อมูลจะไม่ซิงก์ข้ามเครื่องอัตโนมัติ!</strong> แต่ละคนจะเห็นข้อมูลของตัวเองเท่านั้น
               </p>
               <p className="text-blue-800 text-sm">
-                💾 <strong>สำรองข้อมูล:</strong> ใช้ปุ่ม "ส่งออกรายการ" เพื่อบันทึกเป็นไฟล์ JSON<br/>
-                📤 <strong>นำเข้าข้อมูล:</strong> ใช้ปุ่ม "นำเข้ารายการ" เพื่อโหลดข้อมูลจากไฟล์ JSON
+                💾 <strong>วิธีแชร์กับทีม:</strong> ใช้ปุ่ม "ส่งออกรายการ" เพื่อบันทึกเป็นไฟล์ JSON แล้วส่งให้เพื่อน แล้วเพื่อนใช้ปุ่ม "นำเข้ารายการ" เพื่อโหลดข้อมูล<br/>
+                📌 <strong>แนะนำ:</strong> แชร์ไฟล์ผ่าน Google Drive, Line, หรือ Email
               </p>
             </div>
           </div>

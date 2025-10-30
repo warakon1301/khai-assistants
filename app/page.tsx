@@ -18,24 +18,30 @@ export default function Home() {
       setViewMode(savedViewMode);
     }
 
-    // Load custom templates from API
-    const loadTemplates = async () => {
-      try {
-        const response = await fetch('/api/templates');
-        if (response.ok) {
-          const data = await response.json();
-          setCategories(data);
-        } else {
-          console.error('Failed to load templates from API');
+    // Load custom templates from localStorage
+    const loadTemplates = () => {
+      const savedTemplates = localStorage.getItem('custom-templates');
+      if (savedTemplates) {
+        try {
+          setCategories(JSON.parse(savedTemplates));
+        } catch (error) {
+          console.error('Error loading custom templates:', error);
         }
-      } catch (error) {
-        console.error('Error loading templates:', error);
       }
     };
 
     loadTemplates();
 
-    // Listen for custom event from manage page in same tab
+    // Listen for storage changes to sync with manage page
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === 'custom-templates') {
+        loadTemplates();
+      }
+    };
+
+    window.addEventListener('storage', handleStorageChange);
+
+    // Also listen for custom event from manage page in same tab
     const handleCustomStorageChange = () => {
       loadTemplates();
     };
@@ -43,6 +49,7 @@ export default function Home() {
     window.addEventListener('templates-updated', handleCustomStorageChange);
 
     return () => {
+      window.removeEventListener('storage', handleStorageChange);
       window.removeEventListener('templates-updated', handleCustomStorageChange);
     };
   }, []);

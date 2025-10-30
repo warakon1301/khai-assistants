@@ -1,20 +1,50 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { templateCategories } from '@/data/templates';
+import { templateCategories, TemplateCategory } from '@/data/templates';
 import TemplateCategorySection from '@/components/TemplateCategorySection';
 import ViewModeSwitcher, { ViewMode } from '@/components/ViewModeSwitcher';
+import Link from 'next/link';
 
 export default function Home() {
   const [searchQuery, setSearchQuery] = useState('');
   const [viewMode, setViewMode] = useState<ViewMode>('list');
+  const [categories, setCategories] = useState<TemplateCategory[]>(templateCategories);
 
-  // Load view mode preference from localStorage on mount
+  // Load view mode preference and custom templates from localStorage on mount
   useEffect(() => {
     const savedViewMode = localStorage.getItem('template-view-mode') as ViewMode;
     if (savedViewMode) {
       setViewMode(savedViewMode);
     }
+
+    // Load custom templates from API
+    const loadTemplates = async () => {
+      try {
+        const response = await fetch('/api/templates');
+        if (response.ok) {
+          const data = await response.json();
+          setCategories(data);
+        } else {
+          console.error('Failed to load templates from API');
+        }
+      } catch (error) {
+        console.error('Error loading templates:', error);
+      }
+    };
+
+    loadTemplates();
+
+    // Listen for custom event from manage page in same tab
+    const handleCustomStorageChange = () => {
+      loadTemplates();
+    };
+
+    window.addEventListener('templates-updated', handleCustomStorageChange);
+
+    return () => {
+      window.removeEventListener('templates-updated', handleCustomStorageChange);
+    };
   }, []);
 
   return (
@@ -22,6 +52,14 @@ export default function Home() {
       <div className="container mx-auto px-4 py-10 max-w-7xl">
         {/* Header */}
         <div className="text-center mb-10">
+          <div className="flex items-center justify-end mb-4">
+            <Link
+              href="/manage"
+              className="px-6 py-2 bg-gray-800 text-white rounded-lg hover:bg-gray-900 transition-colors font-medium shadow-lg"
+            >
+              ⚙️ จัดการเทมเพลต
+            </Link>
+          </div>
           <h1 className="text-5xl font-bold text-gray-900 mb-4 tracking-tight">
             🐷 Template Viewer
           </h1>
@@ -67,7 +105,7 @@ export default function Home() {
 
         {/* Template Categories */}
         <div>
-          {templateCategories.map((category, index) => (
+          {categories.map((category, index) => (
             <TemplateCategorySection
               key={category.id}
               category={category}
@@ -77,7 +115,7 @@ export default function Home() {
             />
           ))}
           
-          {searchQuery && templateCategories.every(
+          {searchQuery && categories.every(
             (cat) => cat.templates.filter(
               (t) => t.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
                      t.content.toLowerCase().includes(searchQuery.toLowerCase())

@@ -5,54 +5,62 @@ import { templateCategories, TemplateCategory } from '@/data/templates';
 import TemplateCategorySection from '@/components/TemplateCategorySection';
 import ViewModeSwitcher, { ViewMode } from '@/components/ViewModeSwitcher';
 import Link from 'next/link';
+import { db } from '@/lib/firebase';
+import { collection, doc, getDoc, onSnapshot } from 'firebase/firestore';
 
 export default function Home() {
   const [searchQuery, setSearchQuery] = useState('');
   const [viewMode, setViewMode] = useState<ViewMode>('list');
   const [categories, setCategories] = useState<TemplateCategory[]>(templateCategories);
+  const [loading, setLoading] = useState(true);
 
-  // Load view mode preference and custom templates from localStorage on mount
+  // Load view mode preference and custom templates from Firebase on mount
   useEffect(() => {
     const savedViewMode = localStorage.getItem('template-view-mode') as ViewMode;
     if (savedViewMode) {
       setViewMode(savedViewMode);
     }
 
-    // Load custom templates from localStorage
-    const loadTemplates = () => {
-      const savedTemplates = localStorage.getItem('custom-templates');
-      if (savedTemplates) {
-        try {
-          setCategories(JSON.parse(savedTemplates));
-        } catch (error) {
-          console.error('Error loading custom templates:', error);
-        }
+    // Load templates from Firebase with real-time updates
+    const loadTemplatesFromFirebase = async () => {
+      try {
+        const templatesRef = doc(db, 'app', 'templates');
+        
+        // Set up real-time listener
+        const unsubscribe = onSnapshot(templatesRef, (snapshot) => {
+          if (snapshot.exists()) {
+            const data = snapshot.data();
+            if (data && data.categories) {
+              setCategories(data.categories);
+            }
+          } else {
+            // If no data exists, use defaults
+            setCategories(templateCategories);
+          }
+          setLoading(false);
+        });
+
+        return () => unsubscribe();
+      } catch (error) {
+        console.error('Error loading templates from Firebase:', error);
+        setCategories(templateCategories);
+        setLoading(false);
       }
     };
 
-    loadTemplates();
-
-    // Listen for storage changes to sync with manage page
-    const handleStorageChange = (e: StorageEvent) => {
-      if (e.key === 'custom-templates') {
-        loadTemplates();
-      }
-    };
-
-    window.addEventListener('storage', handleStorageChange);
-
-    // Also listen for custom event from manage page in same tab
-    const handleCustomStorageChange = () => {
-      loadTemplates();
-    };
-
-    window.addEventListener('templates-updated', handleCustomStorageChange);
-
-    return () => {
-      window.removeEventListener('storage', handleStorageChange);
-      window.removeEventListener('templates-updated', handleCustomStorageChange);
-    };
+    loadTemplatesFromFirebase();
   }, []);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-pink-50 via-rose-50 to-fuchsia-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="text-6xl mb-4">🐷</div>
+          <p className="text-xl text-gray-600">กำลังโหลดข้อมูล...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-pink-50 via-rose-50 to-fuchsia-50">

@@ -3,6 +3,8 @@
 import { useState, useEffect } from 'react';
 import { templateCategories, TemplateCategory, Template } from '@/data/templates';
 import Link from 'next/link';
+import { db } from '@/lib/firebase';
+import { doc, setDoc, onSnapshot } from 'firebase/firestore';
 
 export default function ManageTemplates() {
   const [categories, setCategories] = useState<TemplateCategory[]>([]);
@@ -10,30 +12,44 @@ export default function ManageTemplates() {
   const [editingCategory, setEditingCategory] = useState<string>('');
   const [showAddForm, setShowAddForm] = useState<string | false>(false);
   const [newCategory, setNewCategory] = useState('');
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
 
-  // Load templates from localStorage
+  // Load templates from Firebase
   useEffect(() => {
-    const saved = localStorage.getItem('custom-templates');
-    if (saved) {
-      try {
-        setCategories(JSON.parse(saved));
-      } catch (error) {
-        console.error('Error loading custom templates:', error);
+    const templatesRef = doc(db, 'app', 'templates');
+    
+    // Set up real-time listener
+    const unsubscribe = onSnapshot(templatesRef, (snapshot) => {
+      if (snapshot.exists()) {
+        const data = snapshot.data();
+        if (data && data.categories) {
+          setCategories(data.categories);
+        }
+      } else {
+        // If no data exists, initialize with defaults
         setCategories(templateCategories);
+        setDoc(templatesRef, { categories: templateCategories });
       }
-    } else {
-      setCategories(templateCategories);
-      localStorage.setItem('custom-templates', JSON.stringify(templateCategories));
-    }
+      setLoading(false);
+    });
+
+    return () => unsubscribe();
   }, []);
 
-  // Save templates to localStorage
-  const saveTemplates = (newCategories: TemplateCategory[]) => {
-    localStorage.setItem('custom-templates', JSON.stringify(newCategories));
-    setCategories(newCategories);
-    
-    // Dispatch custom event to notify other pages
-    window.dispatchEvent(new Event('templates-updated'));
+  // Save templates to Firebase
+  const saveTemplates = async (newCategories: TemplateCategory[]) => {
+    setSaving(true);
+    try {
+      const templatesRef = doc(db, 'app', 'templates');
+      await setDoc(templatesRef, { categories: newCategories });
+      setCategories(newCategories);
+    } catch (error) {
+      console.error('Error saving templates:', error);
+      alert('เกิดข้อผิดพลาดในการบันทึกข้อมูล');
+    } finally {
+      setSaving(false);
+    }
   };
 
   // Edit template
@@ -179,6 +195,17 @@ export default function ManageTemplates() {
     event.target.value = '';
   };
 
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-pink-50 via-rose-50 to-fuchsia-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="text-6xl mb-4">🐷</div>
+          <p className="text-xl text-gray-600">กำลังโหลดข้อมูล...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-pink-50 via-rose-50 to-fuchsia-50">
       <div className="container mx-auto px-4 py-10 max-w-7xl">
@@ -192,6 +219,7 @@ export default function ManageTemplates() {
               <button
                 onClick={handleExport}
                 className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors flex items-center gap-2"
+                disabled={saving}
               >
                 📥 ส่งออกรายการ
               </button>
@@ -207,13 +235,17 @@ export default function ManageTemplates() {
               <button
                 onClick={handleReset}
                 className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors"
+                disabled={saving}
               >
                 🔄 รีเซ็ตเป็นค่าตั้งต้น
               </button>
             </div>
           </div>
           <h1 className="text-4xl font-bold text-gray-900">จัดการเทมเพลต</h1>
-          <p className="text-gray-600 mt-2">แก้ไข เพิ่ม หรือลบเทมเพลตและหมวดหมู่</p>
+          <p className="text-gray-600 mt-2">
+            แก้ไข เพิ่ม หรือลบเทมเพลตและหมวดหมู่
+            {saving && <span className="ml-2 text-green-600">💾 กำลังบันทึก...</span>}
+          </p>
         </div>
 
         {/* Info Box */}
@@ -223,14 +255,14 @@ export default function ManageTemplates() {
             <div>
               <h3 className="font-bold text-blue-900 mb-1">เคล็ดลับการใช้งาน</h3>
               <p className="text-blue-800 text-sm mb-2">
-                ✅ ระบบจะบันทึกข้อมูลอัตโนมัติทุกครั้งที่คุณแก้ไข แต่ยังอยู่ในเบราว์เซอร์เท่านั้น
+                ✅ ระบบจะบันทึกข้อมูลไปที่ Firebase อัตโนมัติทุกครั้งที่คุณแก้ไข
               </p>
               <p className="text-blue-800 text-sm mb-2">
-                ⚠️ <strong>ข้อมูลจะไม่ซิงก์ข้ามเครื่องอัตโนมัติ!</strong> แต่ละคนจะเห็นข้อมูลของตัวเองเท่านั้น
+                🌐 <strong>ข้อมูลจะซิงก์ข้ามเครื่องอัตโนมัติ!</strong> ทุกคนที่เปิดเว็บเดียวกันจะเห็นข้อมูลเดียวกันแบบ Real-time
               </p>
               <p className="text-blue-800 text-sm">
-                💾 <strong>วิธีแชร์กับทีม:</strong> ใช้ปุ่ม "ส่งออกรายการ" เพื่อบันทึกเป็นไฟล์ JSON แล้วส่งให้เพื่อน แล้วเพื่อนใช้ปุ่ม "นำเข้ารายการ" เพื่อโหลดข้อมูล<br/>
-                📌 <strong>แนะนำ:</strong> แชร์ไฟล์ผ่าน Google Drive, Line, หรือ Email
+                💾 <strong>สำรองข้อมูล:</strong> ใช้ปุ่ม "ส่งออกรายการ" เพื่อบันทึกเป็นไฟล์ JSON<br/>
+                📤 <strong>นำเข้าข้อมูล:</strong> ใช้ปุ่ม "นำเข้ารายการ" เพื่อโหลดข้อมูลจากไฟล์ JSON
               </p>
             </div>
           </div>

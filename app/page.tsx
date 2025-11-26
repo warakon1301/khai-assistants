@@ -84,7 +84,7 @@ export default function Home() {
         </div>
 
         {/* Search Bar and Controls */}
-        <div className="mb-10">
+        <div className="mb-10 sticky top-4 z-50">
           <div className="bg-white rounded-xl shadow-lg border border-gray-200 p-5">
             <div className="flex flex-col lg:flex-row gap-4">
               {/* Search Input */}

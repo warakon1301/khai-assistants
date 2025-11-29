@@ -22,33 +22,28 @@ export default function Home() {
     }
 
     // Load templates from Firebase with real-time updates
-    const loadTemplatesFromFirebase = async () => {
-      try {
-        const templatesRef = doc(db, 'app', 'templates');
-        
-        // Set up real-time listener
-        const unsubscribe = onSnapshot(templatesRef, (snapshot) => {
-          if (snapshot.exists()) {
-            const data = snapshot.data();
-            if (data && data.categories) {
-              setCategories(data.categories);
-            }
-          } else {
-            // If no data exists, use defaults
-            setCategories(templateCategories);
-          }
-          setLoading(false);
-        });
-
-        return () => unsubscribe();
-      } catch (error) {
-        console.error('Error loading templates from Firebase:', error);
+    const templatesRef = doc(db, 'app', 'templates');
+    
+    // Set up real-time listener
+    const unsubscribe = onSnapshot(templatesRef, (snapshot) => {
+      if (snapshot.exists()) {
+        const data = snapshot.data();
+        if (data && data.categories) {
+          setCategories(data.categories);
+        }
+      } else {
+        // If no data exists, use defaults
         setCategories(templateCategories);
-        setLoading(false);
       }
-    };
+      setLoading(false);
+    }, (error) => {
+      console.error('Error loading templates from Firebase:', error);
+      setCategories(templateCategories);
+      setLoading(false);
+    });
 
-    loadTemplatesFromFirebase();
+    // Cleanup function to unsubscribe when component unmounts
+    return () => unsubscribe();
   }, []);
 
   if (loading) {
